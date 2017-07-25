@@ -21,11 +21,16 @@
       "styles": [
         "styles.css"
       ],
-      "scripts": [],
+      "scripts": [
+        "../node_modules/jquery/dist/jquery.js",
+        "../node_modules/signalr/jquery.signalr.js"
+      ],
       "environmentSource": "environments/environment.ts",
       "environments": {
-        "dev": "environments/environment.ts",
-        "prod": "environments/environment.prod.ts"
+        "local": "environments/environment.ts",
+        "prod": "environments/environment.prod.ts",
+        "dev": "environments/environment.dev.ts",
+        "test": "environments/environment.test.ts"
       }
     }
   ],
