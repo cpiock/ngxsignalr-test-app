@@ -2,6 +2,7 @@ import {Injectable, Inject} from '@angular/core';
 import {Subject} from 'rxjs/Subject';
 import {Observable} from 'rxjs/Observable';
 
+import { WindowRef } from './WindowRef';
 
 /**
  * When SignalR runs it will add functions to the global $ variable
@@ -9,8 +10,35 @@ import {Observable} from 'rxjs/Observable';
  * class we won't want to depend on any global variables, so this
  * class provides an abstraction away from using $ directly in here.
  */
-export class SignalrWindow extends Window {
-    $: any;
+
+export class SignalrWindow {
+    window: any;
+    hubConnection: any;
+
+    constructor(private winRef: WindowRef) {
+        this.window =  winRef.nativeWindow;
+        this.hubConnection = winRef.nativeWindow.hubConnection;
+    }
+
+    getConnectionState(state: any): ConnectionState {
+        let newState = ConnectionState.Connecting;
+        switch (state) {
+            case this.window.nativeWindow.signalR.connectionState.connecting:
+                newState = ConnectionState.Connecting;
+                break;
+            case this.window.nativeWindow.signalR.connectionState.connected:
+                newState = ConnectionState.Connected;
+                break;
+            case this.window.nativeWindow.signalR.connectionState.reconnecting:
+                newState = ConnectionState.Reconnecting;
+                break;
+            case this.window.nativeWindow.signalR.connectionState.disconnected:
+                newState = ConnectionState.Disconnected;
+                break;
+        }
+
+        return newState;
+    }
 }
 
 export enum ConnectionState {
@@ -93,10 +121,10 @@ export class SignalrChannelService {
     private subjects = new Array<ChannelSubject>();
 
     constructor(
-        @Inject(SignalrWindow) private window: SignalrWindow,
+        @Inject(SignalrWindow) private signalrWindow: SignalrWindow,
         @Inject('channel.config') private channelConfig: ChannelConfig
     ) {
-        if (this.window.$ === undefined || this.window.$.hubConnection === undefined) {
+        if (this.signalrWindow === undefined || this.signalrWindow.hubConnection === undefined) {
             throw new Error('The variable $ or the .hubConnection() function are not defined...please check the SignalR scripts have been loaded properly');
         }
 
@@ -106,29 +134,14 @@ export class SignalrChannelService {
         this.error$ = this.errorSubject.asObservable();
         this.starting$ = this.startingSubject.asObservable();
 
-        this.hubConnection = this.window.$.hubConnection();
+        this.hubConnection = this.signalrWindow.hubConnection();
         this.hubConnection.url = channelConfig.url;
         this.hubProxy = this.hubConnection.createHubProxy(channelConfig.hubName);
 
         // Define handlers for the connection state events
         //
         this.hubConnection.stateChanged((state: any) => {
-            let newState = ConnectionState.Connecting;
-
-            switch (state.newState) {
-                case this.window.$.signalR.connectionState.connecting:
-                    newState = ConnectionState.Connecting;
-                    break;
-                case this.window.$.signalR.connectionState.connected:
-                    newState = ConnectionState.Connected;
-                    break;
-                case this.window.$.signalR.connectionState.reconnecting:
-                    newState = ConnectionState.Reconnecting;
-                    break;
-                case this.window.$.signalR.connectionState.disconnected:
-                    newState = ConnectionState.Disconnected;
-                    break;
-            }
+            let newState = this.signalrWindow.getConnectionState(state);
 
             // Push the new state on our subject
             //

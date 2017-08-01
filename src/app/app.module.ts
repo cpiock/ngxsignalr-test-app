@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 
 import { AppComponent } from './app.component';
 import {SignalrChannelService, ChannelConfig, SignalrWindow, channelConfig} from './signalrchannel.service';
+import { WindowRef } from './windowRef';
 
 @NgModule({
   declarations: [
@@ -18,6 +19,7 @@ import {SignalrChannelService, ChannelConfig, SignalrWindow, channelConfig} from
     HttpModule
   ],
   providers: [ SignalrChannelService,
+    WindowRef,
     { provide: SignalrWindow, useValue: window },
     { provide: 'channel.config', useValue: channelConfig}],
   bootstrap: [AppComponent]
